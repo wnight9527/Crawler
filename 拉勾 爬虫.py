@@ -3,9 +3,6 @@ import requests
 from requests.exceptions import RequestException
 import re
 import time
-from pyquery import PyQuery as pq
-
-
 
 def get_one_page(url):
     try:
@@ -21,17 +18,19 @@ def get_one_page(url):
 
 
 def parse_one_page(html):
-    pattern = re.compile('<div class="List-item">.*?element_name="User" target="_blank".*?alt=\"(.*?)\"/>.*?<div class="RichText ztext">(.*?)</div><div class="ContentItem-status">.*?<span class="ContentItem-statusItem">(.*?)</span><span class="ContentItem-statusItem">(.*?)</span><span class="ContentItem-statusItem">(.*?)</span></div></div></div></div><div class="ContentItem-extra">', re.S)
+    # pattern = re.compile('<dd>.*?board-index.*?>(\d+)</i>.*?data-src="(.*?)".*?name"><a'
+    #                      + '.*?>(.*?)</a>.*?star">(.*?)</p>.*?releasetime">(.*?)</p>'
+    #                      + '.*?integer">(.*?)</i>.*?fraction">(.*?)</i>.*?</dd>', re.S)
+    pattern = re.compile('<li.*?data-positionname="(.*?)" data-companyid.*?<span class="money">(.*?)</span>.*?<!--<i></i>-->(.*?)</div>.*?</li>', re.S)
     items = re.findall(pattern, html)
-
-
     for item in items:
         yield {
-            'name': item[0],
-            'Description': item[1],
-            'answer': item[2].strip()[:-3],
-            'Article': item[2].strip()[:-3],
-            'follow': item[3].strip()[:-3]
+            'gangwei': item[0],#岗位
+            'xignshui': item[1],#薪水
+            'yaoqiu': item[2].strip(),#经验要求
+            # 'actor': item[3].strip()[3:],
+            # 'time': item[4].strip()[5:],
+            # 'score': item[5] + item[6]
         }
 
 
@@ -41,7 +40,9 @@ def write_to_file(content):
 
 
 def main(offset):
-    url = 'https://www.zhihu.com/people/whight001/following?page=' + str(offset)
+    # url = 'http://maoyan.com/board/4?offset=' + str(offset)
+    url = 'https://www.lagou.com/zhaopin/chanpinjingli1/'+ str(offset)+'/?filterOption=3'
+
     html = get_one_page(url)
     for item in parse_one_page(html):
         print(item)
@@ -49,6 +50,6 @@ def main(offset):
 
 
 if __name__ == '__main__':
-    for i in range(23):
+    for i in range(25):
         main(offset=i)
-        time.sleep(1)
+        time.sleep(4)
