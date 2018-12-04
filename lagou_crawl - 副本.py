@@ -69,4 +69,6 @@ def main(offset):
 if __name__ == '__main__':
     for i in range(25):
         main(offset=i)
-        time.sleep(2)
+        Interval = random.uniform(0.5, 3)
+        print(Interval)
+        time.sleep(Interval)
