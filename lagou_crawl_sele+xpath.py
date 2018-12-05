@@ -10,7 +10,7 @@ import random
 '''
 问题：
 有重复的内容
-有的时候没有登陆
+?有的时候没有登陆
 最后一页没有获取到
 pager_is_current是当前页
 通过hidefocus计算最后一页
@@ -24,84 +24,73 @@ options = webdriver.ChromeOptions()
 options.add_argument("--no-sandbox")
 b = webdriver.Chrome(executable_path=path, chrome_options=options)
 # input url 后续改进为可选项或者传入一个字典
-b.get('https://www.lagou.com/jobs/list_数据分析?px=default&city=上海&district=浦东新区#filterBox.')
+b.get('https://www.lagou.com/jobs/list_产品?city=上海&cl=false&fromSearch=true&labelWords=&suginput=')
 
 
 def work(number):
     html = etree.HTML(b.page_source)
-    print('-----获取页面数据-----')
+    print('-----开始获取页面数据-----',)
 
     # turn
 
     result = html.xpath('//*[@id="s_position_list"]/ul/li/@data-company')
     result2 = html.xpath('//*[@id="s_position_list"]/ul/li/@data-positionname')
-    result3 = html.xpath('//*[@id="s_position_list"]/ul/li/@data-salary')
-    print(result,
-          result2,
-          result3)
+    Salary = html.xpath('//*[@id="s_position_list"]/ul/li/@data-salary')
+
+    print(result,/n,
+          result2,/n,
+          Salary)
 
     # 写入文件
     # newline=空 就不会有空白行
-    with open('data.csv', 'a', encoding='utf-8',newline='') as csvfile:
-        fieldnames = ['Post',
+    with open('pm.csv', 'a', encoding='utf-8',newline='') as csvfile:
+        fieldnames = ['Title',
                       'Company',
-                      'Industry'
+                      'Salary',
+                      'AverageSalary'
                       ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         # 写入头信息
-        if number == 1:
+        if number == 0:
             writer.writeheader()
         for i in range(len(result)):
-            writer.writerow({'Post': result[i],
+            #获取薪水均值
+            Salarymini = Salary[i].lower()
+            SalaryTWO = re.match(r'(.*?)k-(.*?)k', Salarymini, re.M | re.I)
+            averageSalary = (int(SalaryTWO.group(2)) + int(SalaryTWO.group(1)))/2
+            print(averageSalary)
+            writer.writerow({'Title': result[i],
                              'Company': result2[i],
-                             'Industry': result3[i]})
+                             'Salary': Salarymini,
+                             'AverageSalary': averageSalary
+                             })
 
 def main():
 
     #找到最大页数
     pagelist = b.find_elements_by_class_name('pager_not_current')
+
     pagemax = int(pagelist[-1].text)
-    for number in range(1,pagemax):
+    print('total : ',pagemax)
+    for number in range(pagemax):
+        #打印当前页
+        CurrentPageArray = b.find_elements_by_class_name('pager_is_current')
+        CurrentPage = CurrentPageArray[0].text
+        print('当前页',int(CurrentPage))
+
         work(number)
-        Interval = random.uniform(0.5, 6)
-        print('interval:', Interval)
+        #sleep 随机时间 再继续
+        Interval = random.uniform(2, 6)
+        print('间隔:', Interval)
         time.sleep(Interval)
-    #不是最后一页就继续
+
+
+
+        #不是最后一页就继续下一页
         if number < pagemax:
             button = b.find_element_by_class_name('pager_next')
             button.click()
-
-
-            # fieldnames = ['Post',
-            #               'Company',
-            #               # 'SalaryD',
-            #               # 'SalaryU',
-            #               # 'Experience',
-            #               'Industry'
-            #               # 'Financing',
-            #               # 'Number',
-            #               # 'sloga'
-            #               ]
-            # writer.writerow({'Post': result[0],
-            #                  'Company': result2[0],
-            #                  # 'SalaryD': SalaryD,
-            #                  # 'SalaryU': SalaryU,
-            #                  # 'Experience': positionAjax['workYear'],
-            #                  'Industry': result3[0]
-            #                  # 'Financing': positionAjax['financeStage'],
-            #                  # 'Number': positionAjax['companySize'],
-            #                  # 'sloga': positionAjax['positionAdvantage']
-            #                 })
-
-        # a = doc('.list_item_bot div')
-        # for item in a.items():
-        #     print(item.text())
-
-        # # 拿到最低工资和最高工资
-        # patternD = re.compile('(.*?)k-.*?', re.S)
-        # SalaryD = re.findall(patternD, positionAjax['salary'].lower())
-        # patternU = re.compile('.*?k-(.*?)', re.S)
-        # SalaryU = re.findall(patternU, positionAjax['salary'].lower())
+            print('-----进入下一页-----', )
 
 if __name__ == '__main__':
     main()
