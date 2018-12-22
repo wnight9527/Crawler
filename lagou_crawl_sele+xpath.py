@@ -17,14 +17,17 @@ pager_is_current是当前页
 <span hidefocus="hidefocus" page="11" class="pager_not_current">
     11
 </span>
+ 还不能自动去重
 '''
 # open browser
-path = "C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe"
-options = webdriver.ChromeOptions()
-options.add_argument("--no-sandbox")
-b = webdriver.Chrome(executable_path=path, chrome_options=options)
-# input url 后续改进为可选项或者传入一个字典
-b.get('https://www.lagou.com/jobs/list_交互设计?city=上海&cl=false&fromSearch=true&labelWords=&suginput=')
+# path = "C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe"
+path = "C:\Program Files\Tencent\QQBrowser\chromedriver.exe"
+
+chrome_options = webdriver.ChromeOptions()
+chrome_options.add_argument("--no-sandbox")
+# chrome_options.add_experimental_option("debuggerAddress", "localhost:9222")
+b = webdriver.Chrome(executable_path=path, chrome_options=chrome_options)
+
 
 
 def work(number):
@@ -49,7 +52,8 @@ def work(number):
 
     # 写入文件
     # newline=空 就不会有空白行
-    with open('jh.csv', 'a', encoding='utf-8',newline='') as csvfile:
+
+    with open('22/12/2018.csv', 'a', encoding='utf-8',newline='') as csvfile:
         fieldnames = ['Company',
                       'positionName',
                       'Salary',
@@ -126,4 +130,9 @@ def main():
             print('-----> 进入下一页', )
 
 if __name__ == '__main__':
-    main()
+    careerlist = ['交互设计','java','pm','python','产品经理','UI','数据分析','运营','游戏策划']
+    for condition in careerlist:
+        # input url 后续改进为可选项或者传入一个字典
+        b.get('https://www.lagou.com/jobs/list_'+condition+'?city=上海&cl=false&fromSearch=true&labelWords=&suginput=')
+        main()
+    print('完成！give me five')
