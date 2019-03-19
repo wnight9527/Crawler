@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# author:wnight 白夜
 import requests
 import re
 import time
@@ -11,7 +12,7 @@ import random
 import json
 import requests
 import pymongo
-# from config import *
+from config import *
 from bs4 import BeautifulSoup
 import random
 import time
@@ -20,46 +21,44 @@ import time
 有些职位因为搜索条件相近，会重复，需要清洗
 数据库，怎么分表？
 基本把功能实现了，之后第一页的时候爬取二级目录，并且保存 上海这个层级
+
+把内容拆开了 
+把数据处理了下 时间与酬薪
+ 
 '''
-# open browser
-path=r"C:\Users\white\AppData\Local\Google\Chrome\Application\chromedriver.exe"
 
 
+# open browser--两个地址
+# path=r"C:\Users\white\AppData\Local\Google\Chrome\Application\chromedriver.exe"
+path = "C:\Program Files\Tencent\QQBrowser\chromedriver.exe"
 chrome_options = webdriver.ChromeOptions()
 # chrome_options.add_argument()
 # chrome_options.add_experimental_option("debuggerAddress", "localhost:9222")
 b = webdriver.Chrome(executable_path=path, chrome_options=chrome_options)
 
+#执行爬取
 def main(mongo_table):
-    # #找到最大页数，了解要翻多少页
-    # try:
-    #     pagelist = b.find_elements_by_class_name('pager_not_current')
-    #     pagemax = int(pagelist[-1].text)
-    # except IndexError as e:
-    #     print(e)
-
+    #最多三十个页面
     for number in range(0,31):
         parse_link(mongo_table)
-        # sleep 随机时间 再继续
+        # sleep随机时间
         Interval = random.uniform(1, 2)
         time.sleep(Interval)
 
         #不是最后一页就继续下一页
-        button = b.find_element_by_class_name('pager_next')
-        if button.is_enabled() == True:
-            button.click()
+        nextButton = b.find_element_by_class_name('pager_next')
+        if nextButton.is_enabled() == True:
+            nextButton.click()
             print('-----> 进入下一页')
         else:
             break
 
-        print('跳出循环了吗')
-
+#分析及保存数据库
 def parse_link(mongo_table):
-        # if b.status_code == 404:
+        # if b.status_code == 404:#只能爬网页找这个结果
         #     pass
         # else:
             soup = BeautifulSoup(b.page_source, 'lxml')
-
             positions = soup.select('ul > li > div.list_item_top > div.position > div.p_top > a > h3')
             adds = soup.select('ul > li > div.list_item_top > div.position > div.p_top > a > span > em')
             publishs = soup.select('ul > li > div.list_item_top > div.position > div.p_top > span')
@@ -75,7 +74,7 @@ def parse_link(mongo_table):
 					zip(positions,adds,publishs,moneys,needs,companys,tags,fulis):
                 data = {
                     'position' : position.get_text(),
-                    'add' : add.get_text(),
+                    'add' : city + add.get_text(),
                     'publish' : publish.get_text(),
                     'money' : money.get_text(),
                     'need' : need.get_text().split('\n')[2],
@@ -85,45 +84,41 @@ def parse_link(mongo_table):
                 }
                 save_database(data, mongo_table)
 
-
+#保存数据库
 def save_database(data, mongo_table):
     if db[mongo_table].insert_one(data):
         print('GET IT ---> ', data)
 
 if __name__ == '__main__':
-    careerlist = [
-                  # '数据分析',
-                  '数据挖掘',
-                  '大数据',
-                  '推荐算法',
-                  '人工智能',
-                  'pm',
-                  '产品经理',
-                  '交互设计',
-                  'python',
-                  'java',
-                  'UI',
-                  '运营',
-                  '游戏策划',
-                  ]
-    #职位列表
+    #登录
     b.get('https://www.lagou.com/')
     input("start---->登录")
+
     #开始计时
     time_start = time.time()
 
-    for condition in careerlist:
-        mongo_table = 'lagou'
-        # input url 后续改进为可选项或者传入一个字典
-        b.get('https://www.lagou.com/jobs/list_' + condition + '?city=上海&cl=false&fromSearch=true&labelWords=&suginput=')
-        client = pymongo.MongoClient('localhost', 27017)
-        db = client[mongo_table]
-        main(mongo_table)
+    for condition in careerList:
+        for city in cityRange:
+
+            b.get('https://www.lagou.com/jobs/list_{}?city={}&cl=false&fromSearch=true&labelWords=&suginput='.format(condition,city))
+            #拿区域值
+            soup = BeautifulSoup(b.page_source, 'lxml')
+            Administratives = soup.select('filterCollapse > div:nth-child(1) > div.choose-detail > div > div:nth-child(2) > a')
+            for Administrative in Administratives:
+                AdministrativeString = Administrative.get_text()
+                if AdministrativeString == '不限':
+                    #跳过不限的选项
+                    pass
+                else:
+                    #设置存储位置
+                    mongo_table = condition
+                    client = pymongo.MongoClient(MONGO_URL, MONGO_DB)
+                    db = client[mongo_table]
+
+                    b.get('https://www.lagou.com/jobs/list_{}?px=default&city={}&district={}#filterBox'.format(condition, city,AdministrativeString))
+                    main(mongo_table)
 
     print('完成！give me five! 运行时间为',time.time() - time_start)
-
-
-
 
 # 获取cookie
     # # 获取cookie并通过json模块将dict转化成str
