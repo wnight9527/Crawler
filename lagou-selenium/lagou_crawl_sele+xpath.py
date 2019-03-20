@@ -29,10 +29,8 @@ from config import *
 把数据处理了下 时间与酬薪
 可以把城市获取也改成自动的
 职业要改吗？
-
- 
 '''
-
+datasum = 0
 
 # open browser--两个地址
 # path=r"C:\Users\white\AppData\Local\Google\Chrome\Application\chromedriver.exe"
@@ -103,6 +101,8 @@ def parse_link(mongo_table):
                 'fuli' : fuli.get_text()
             }
             save_database(data, mongo_table)
+            datasum +=1
+
 #保存数据库
 def save_database(data, mongo_table):
     if db[mongo_table].insert_one(data):
