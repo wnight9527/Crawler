@@ -16,6 +16,7 @@ from config import *
 from bs4 import BeautifulSoup
 import random
 import time
+from datetime import datetime, date, timedelta
 '''
 问题：
 有些职位因为搜索条件相近，会重复，需要清洗
@@ -75,12 +76,19 @@ def parse_link(mongo_table):
 
             for position,add,publish,money,need,company,tag,fuli in \
 					zip(positions,adds,publishs,moneys,needs,companys,tags,fulis):
+                #把几天前这种描述改成时间
+                publishTimeTemp = publish.get_text()
+                publishTime = (date.today() + timedelta(days=-re.findall("\d+",publishTimeTemp)[0])).strftime("%Y-%m-%d") if publishTimeTemp.find('天前发布') == True else publishTimeTemp
+
                 data = {
                     'position' : position.get_text(),
                     'add' : city + add.get_text(),
-                    'publish' : publish.get_text(),
-                    'money' : money.get_text(),
-                    'need' : need.get_text().split('\n')[2],
+                    'publish' : publishTime,
+                    # K、k都有
+                    'moneyLowest' : re.match(r'(.*?)k-(.*?)k', money.get_text().lower(), re.M | re.I).group(1),
+                    'moneyHighest': re.match(r'(.*?)k-(.*?)k', money.get_text().lower(), re.M | re.I).group(2),
+                    'experienceNeed' : need.get_text().split(' / ')[0],
+                    'degreeNeed': need.get_text().split(' / ')[1],#考虑到学历可以抵扣一部分经验，需要集合统计
                     'company' : company.get_text(),
                     'tag' : tag.get_text().replace('\n','-'),
                     'fuli' : fuli.get_text()

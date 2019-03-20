@@ -16,13 +16,24 @@ import pymongo
 from bs4 import BeautifulSoup
 import random
 import time
+from datetime import datetime, date, timedelta
+if '3天前发布'.find('天前发布') == True :
+    yesterday = date.today() + timedelta(days=-1)  # 昨天日期
+    yesterday = (date.today() + timedelta(days=-1)).strftime("%Y-%m-%d")
+    print(yesterday)
+ss = '23tian'
+s = re.findall("\d+",ss)[0]
+print(s)
+# SalaryTWO = re.match(r'(.*?)k-(.*?)k', Salarymini, re.M | re.I)
+# print(SalaryTWO.group(1))
 
-for number in range(0, 31):
-
-    if  number <= 12:
-        print(number)
-    else:
-        break
+# for number in range(0, 31):
+#
+#     if  number <= 12:
+#         print(number)
+#     else:
+#         break
+#
 # path = "C:\Program Files\Tencent\QQBrowser\chromedriver.exe"
 # chrome_options = webdriver.ChromeOptions()
 #
