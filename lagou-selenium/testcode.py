@@ -18,33 +18,46 @@ import random
 import time
 from datetime import datetime, date, timedelta
 
-publishTimeTemp = '12:00 发布'
-publishTime = (date.today() + timedelta(days=-re.findall("\d+", publishTimeTemp)[0])).strftime("%Y-%m-%d") if publishTimeTemp.find('天前发布') == True else  publishTimeTemp if publishTimeTemp.find('发布') == False else (date.today()).strftime("%Y-%m-%d")
 
-print(publishTime)
-# if '3天前发布'.find('天前发布') == True :
-#     yesterday = date.today() + timedelta(days=-1)  # 昨天日期
-#     yesterday = (date.today() + timedelta(days=-1)).strftime("%Y-%m-%d")
-#     print(yesterday)
-# ss = '23tian'
-# s = re.findall("\d+",ss)[0]
-# print(s)
-# SalaryTWO = re.match(r'(.*?)k-(.*?)k', Salarymini, re.M | re.I)
-# print(SalaryTWO.group(1))
+datasum = 0
+print('“产品有前景 发展空间大 年终奖 绩效奖金”'.split(' ' or ','or '”'or '“'or '；'or'、'))
+print('“弹性工作；团队氛围；15薪”'.split(' ' or ','or '”'or '“'or '；'))
+if '20:26发布'.find('发布')  == True:
+    print(date.today().strftime("%Y-%m-%d"))
+else:
+    print('222')
 
-# for number in range(0, 31):
+pattern = re.compile('“(.*)”').findall('“产品有前景 发展空间大 年终奖 绩效奖金”')[0].split(' ' or '，'or','or '”'or '“'or '；'or'、')
+print(pattern)
+
+# 试一试是不是一致的
 #
-#     if  number <= 12:
-#         print(number)
-#     else:
-#         break
+# 再把if判断翻过了，先判断日期的
 #
-# path = "C:\Program Files\Tencent\QQBrowser\chromedriver.exe"
-# chrome_options = webdriver.ChromeOptions()
-#
-# b = webdriver.Chrome(executable_path=path, chrome_options=chrome_options)
-# b.get('https://www.lagou.com/jobs/list_{}?city={}&cl=false&fromSearch=true&labelWords=&suginput='.format('java','上海'))
-#
+# 'experienceNeed' : need.get_text().split(' / ')[0],
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # soup = BeautifulSoup(b.page_source, 'lxml')
 # Administratives = soup.select('div > div.choose-detail > div > div:nth-child(2) > a')
 #

@@ -24,30 +24,39 @@ from config import *
 有些职位因为搜索条件相近，会重复，需要清洗
 数据库，怎么分表？
 基本把功能实现了，之后第一页的时候爬取二级目录，并且保存 上海这个层级
-
-把内容拆开了 
+更新：
 把数据处理了下 时间与酬薪
 可以把城市获取也改成自动的
-职业要改吗？
+学习了全局变量的用法
+
+好像会突然停下来不dong?
+
 '''
+
+#职位数
 datasum = 0
 
+# net start MongoDB
+# 开启指令
 # open browser--两个地址
-# path=r"C:\Users\white\AppData\Local\Google\Chrome\Application\chromedriver.exe"
-path = "C:\Program Files\Tencent\QQBrowser\chromedriver.exe"
+path=r"C:\Users\white\AppData\Local\Google\Chrome\Application\chromedriver.exe"
+# path = "C:\Program Files\Tencent\QQBrowser\chromedriver.exe"
 chrome_options = webdriver.ChromeOptions()
 # chrome_options.add_argument()
 # chrome_options.add_experimental_option("debuggerAddress", "localhost:9222")
 b = webdriver.Chrome(executable_path=path, chrome_options=chrome_options)
 
-#执行爬取
+#执行30页爬取
 def main(mongo_table):
-    #最多三十个页面
-    for number in range(0,31):
-        parse_link(mongo_table)
+    global datasum  # 在使用前初次声明
+    #根据职位数计算页数
+    Number_positions = int(re.findall(r"\d+", b.find_element_by_class_name('active').text)[0])
 
+    for number in range(0,Number_positions//15+1):
+        parse_link(mongo_table)
+        print('SUM ', datasum)
         # sleep随机时间
-        Interval = random.uniform(1, 2)
+        Interval = random.uniform(3, 4)
         time.sleep(Interval)
 
         #不是最后一页就继续下一页
@@ -55,80 +64,112 @@ def main(mongo_table):
             nextButton = b.find_element_by_class_name('pager_next')
             if nextButton.is_enabled() == True:
                 nextButton.click()
-                print('-----> 进入下一页')
+                print('进入下一页-----> ')
             else:
                 break
-        except Exception as e:#selenium.common.exceptions.NoSuchElementException
-            print(str(e))
+        except Exception:
             break
 
 
 #分析及保存数据库
 def parse_link(mongo_table):
-        # if b.status_code == 404:#只能爬网页找这个结果
-        #     pass
-        # else:
-        soup = BeautifulSoup(b.page_source, 'lxml')
-        positions = soup.select('ul > li > div.list_item_top > div.position > div.p_top > a > h3')
-        adds = soup.select('ul > li > div.list_item_top > div.position > div.p_top > a > span > em')
-        publishs = soup.select('ul > li > div.list_item_top > div.position > div.p_top > span')
-        moneys = soup.select('ul > li > div.list_item_top > div.position > div.p_bot > div > span')
-        needs = soup.select('ul > li > div.list_item_top > div.position > div.p_bot > div')
-        companys = soup.select('ul > li > div.list_item_top > div.company > div.company_name > a')
-        tags = []
-        if soup.find('div', class_='li_b_l'):
-            tags = soup.select('ul > li > div.list_item_bot > div.li_b_l')
-        fulis = soup.select('ul > li > div.list_item_bot > div.li_b_r')
+    global datasum  # 在使用前初次声明
+    # if b.status_code == 404:#只能爬网页找这个结果
+    #     pass
+    # else:
+    soup = BeautifulSoup(b.page_source, 'lxml')
+    positions = soup.select('ul > li > div.list_item_top > div.position > div.p_top > a > h3')
+    adds = soup.select('ul > li > div.list_item_top > div.position > div.p_top > a > span > em')
+    publishs = soup.select('ul > li > div.list_item_top > div.position > div.p_top > span')
+    moneys = soup.select('ul > li > div.list_item_top > div.position > div.p_bot > div > span')
+    needs = soup.select('ul > li > div.list_item_top > div.position > div.p_bot > div')
+    companys = soup.select('ul > li > div.list_item_top > div.company > div.company_name > a')
+    EnterpriseCorrelations = soup.select('ul > li > div.list_item_top > div.company > div.industry')
+    tags = []
+    if soup.find('div', class_='li_b_l'):
+        tags = soup.select('ul > li > div.list_item_bot > div.li_b_l')
+    fulis = soup.select('ul > li > div.list_item_bot > div.li_b_r')
 
-        for position,add,publish,money,need,company,tag,fuli in \
-                zip(positions,adds,publishs,moneys,needs,companys,tags,fulis):
-            #把几天前发布\12:00发布这种描述改成时间
-            publishTimeTemp = publish.get_text()
-            publishTime = (date.today() + timedelta(days=-int(re.findall("\d+", publishTimeTemp)[0]))).strftime("%Y-%m-%d") if publishTimeTemp.find('天前发布') == True else publishTimeTemp if publishTimeTemp.find('发布') == False else date.today().strftime("%Y-%m-%d")
+    for position,add,publish,money,need,company,tag,fuli,EnterpriseCorrelation in \
+            zip(positions,adds,publishs,moneys,needs,companys,tags,fulis,EnterpriseCorrelations):
 
-            data = {
-                'position' : position.get_text(),
-                'add' : city,
-                'addAdministrative' : AdministrativeString,
-                'publish' : publishTime,
-                # K、k都有,统一并且分成最小值和最大值
-                'moneyLowest' : re.match(r'(.*?)k-(.*?)k', money.get_text().lower(), re.M | re.I).group(1),
-                'moneyHighest': re.match(r'(.*?)k-(.*?)k', money.get_text().lower(), re.M | re.I).group(2),
-                'experienceNeed' : need.get_text().split(' / ')[0],
-                'degreeNeed': need.get_text().split(' / ')[1],#考虑到学历可以抵扣一部分经验，需要集合统计
-                'company' : company.get_text(),
-                'tag' : tag.get_text().replace('\n','-'),
-                'fuli' : fuli.get_text()
-            }
-            save_database(data, mongo_table)
-            datasum +=1
+        publishTime = publish_Data_cleaning(publish)
+        moneyTemp2 = money_Data_cleaning(money)
+        EnterpriseCorrelationTemp = EnterpriseCorrelationData_cleaning(EnterpriseCorrelation.get_text())
+        # 考虑到学历可以抵扣一部分经验，其实可以集合考虑
+        data = {
+            'position' : position.get_text(),
+            'add' : city,
+            'addAdministrative' : AdministrativeString,
+            'publish' : publishTime,
+            'moneyLowest' : moneyTemp2[0],
+            'moneyHighest': moneyTemp2[1],
+            'experienceNeed' : need.get_text().split('\n')[2].split(' / ')[0],
+            'degreeNeed': need.get_text().split('\n')[2].split(' / ')[1],
+            'company' : company.get_text(),
+            'Industry': EnterpriseCorrelationTemp[0],
+            'Financing': EnterpriseCorrelationTemp[1],
+            'NumberPerson': EnterpriseCorrelationTemp[2],
+            'tag' : tag.get_text().replace('\n','-'),
+            'fuli':re.compile('“(.*)”').findall(fuli.get_text())[0]
+        }
+        save_database(data, mongo_table)
+        #数量加一
+        datasum +=1
+
 
 #保存数据库
 def save_database(data, mongo_table):
     if db[mongo_table].insert_one(data):
         print('GET IT ---> ', data)
-# net start MongoDB
+
+#清洗数据
+def EnterpriseCorrelationData_cleaning(EnterpriseCorrelation):
+    tempInformation = re.match(r'\n                    (.*?) / (.*?) / (.*?)\n                ', EnterpriseCorrelation, re.M | re.I)
+    return tempInformation.groups()
+
+def publish_Data_cleaning(publish):
+    # 把几天前发布\12:00发布这种描述改成时间
+    publishTimeTemp = publish.get_text()
+    if publishTimeTemp.find('天前发布') == 1:
+        publishTime = (date.today() + timedelta(days=-int(re.findall("\d+", publishTimeTemp)[0]))).strftime("%Y-%m-%d")
+    elif publishTimeTemp.find('发布') == 5:
+        publishTime = date.today().strftime("%Y-%m-%d")
+    else:
+        publishTime = publishTimeTemp
+    return publishTime
+
+def money_Data_cleaning(money):
+    # K、k都有,统一并且分成最小值和最大值,还有xx以上，2k以下的数据
+    moneyTemp = money.get_text().lower()
+    if moneyTemp.find('以') == True:
+        moneyLowest,moneyHighest = re.findall(r"\d+", moneyTemp)[0]
+    else:
+        moneyLowest = re.match(r'(.*?)k-(.*?)k', money.get_text().lower(), re.M | re.I).group(1)
+        moneyHighest = re.match(r'(.*?)k-(.*?)k', money.get_text().lower(), re.M | re.I).group(2)
+    moneyTemp2 = [moneyLowest,moneyHighest]
+    return moneyTemp2
+
 if __name__ == '__main__':
     #登录
     b.get('https://www.lagou.com/')
+    b.maximize_window()
     input("start---->登录")
 
     #开始计时
     time_start = time.time()
 
     for condition in careerList:
-
-
         for city in cityRange:
 
             b.get('https://www.lagou.com/jobs/list_{}?city={}&cl=false&fromSearch=true&labelWords=&suginput='.format(condition,city))
-
+            time.sleep(2)
             #拿区域值
             soupAdministratives = BeautifulSoup(b.page_source, 'lxml')
             Administratives = soupAdministratives.select('div:nth-child(1) > div.choose-detail > div > div:nth-child(2) > a')
             for Administrative in Administratives:
                 AdministrativeString = Administrative.get_text()
-                print('搜索下一个区域')
+                print('开始加载区域')
                 if AdministrativeString != '不限':
 
                     # 设置存储位置
@@ -136,18 +177,19 @@ if __name__ == '__main__':
                     client = pymongo.MongoClient(MONGO_URL, 27017)
                     db = client[MONGO_DB]
 
-                    b.get('https://www.lagou.com/jobs/list_{}?px=default&city={}&district={}#filterBox'.format(condition,
-                                                                                                             city,
-                                                                                                             AdministrativeString))
+                    b.get('https://www.lagou.com/jobs/list_{}?px=default&city={}&district={}#filterBox'.format(condition,city,AdministrativeString))
+                    time.sleep(2)
                     main(mongo_table)
 
                 else:
-                    print('跳过不限')
+                    print('跳过 不限')
                     # 跳过不限的选项
 
 
 
-    print('完成！give me five! 运行时间为',time.time() - time_start)
+    print('完成！give me five! 运行时间为:',time.time() - time_start)
+    print('获取职位数:{}'.format(datasum))
+    b.quit()
 
 # 获取cookie
     # # 获取cookie并通过json模块将dict转化成str
