@@ -70,13 +70,10 @@ def main(mongo_table):
         except Exception:
             break
 
-
 #分析及保存数据库
 def parse_link(mongo_table):
     global datasum  # 在使用前初次声明
-    # if b.status_code == 404:#只能爬网页找这个结果
-    #     pass
-    # else:
+
     soup = BeautifulSoup(b.page_source, 'lxml')
     positions = soup.select('ul > li > div.list_item_top > div.position > div.p_top > a > h3')
     adds = soup.select('ul > li > div.list_item_top > div.position > div.p_top > a > span > em')
@@ -97,6 +94,17 @@ def parse_link(mongo_table):
         moneyTemp2 = money_Data_cleaning(money)
         EnterpriseCorrelationTemp = EnterpriseCorrelationData_cleaning(EnterpriseCorrelation.get_text())
         # 考虑到学历可以抵扣一部分经验，其实可以集合考虑
+        #fuli tag可能为空的
+        try:
+            fuliTemp = re.compile('“(.*)”').findall(fuli.get_text())[0]
+        except Exception:
+            fuliTemp = ''
+            continue
+        try:
+            tagTemp =  tag.get_text().replace('\n','-')
+        except Exception:
+            tagTemp = ''
+            continue
         data = {
             'position' : position.get_text(),
             'add' : city,
@@ -110,13 +118,12 @@ def parse_link(mongo_table):
             'Industry': EnterpriseCorrelationTemp[0],
             'Financing': EnterpriseCorrelationTemp[1],
             'NumberPerson': EnterpriseCorrelationTemp[2],
-            'tag' : tag.get_text().replace('\n','-'),
-            'fuli':re.compile('“(.*)”').findall(fuli.get_text())[0]
+            'tag' :tagTemp,
+            'fuli':fuliTemp
         }
         save_database(data, mongo_table)
         #数量加一
         datasum +=1
-
 
 #保存数据库
 def save_database(data, mongo_table):
@@ -142,8 +149,9 @@ def publish_Data_cleaning(publish):
 def money_Data_cleaning(money):
     # K、k都有,统一并且分成最小值和最大值,还有xx以上，2k以下的数据
     moneyTemp = money.get_text().lower()
-    if moneyTemp.find('以') == True:
-        moneyLowest,moneyHighest = re.findall(r"\d+", moneyTemp)[0]
+    if moneyTemp.find('以') != -1:
+        moneyLowest,moneyHighest = re.findall(r"\d+", moneyTemp)[0]#出错了    moneyLowest,moneyHighest = re.findall(r"\d+", moneyTemp)[0]ValueError: not enough values to unpack (expected 2, got 1)
+
     else:
         moneyLowest = re.match(r'(.*?)k-(.*?)k', money.get_text().lower(), re.M | re.I).group(1)
         moneyHighest = re.match(r'(.*?)k-(.*?)k', money.get_text().lower(), re.M | re.I).group(2)
@@ -178,7 +186,7 @@ if __name__ == '__main__':
                     db = client[MONGO_DB]
 
                     b.get('https://www.lagou.com/jobs/list_{}?px=default&city={}&district={}#filterBox'.format(condition,city,AdministrativeString))
-                    time.sleep(2)
+                    time.sleep(1)
                     main(mongo_table)
 
                 else:
@@ -190,6 +198,33 @@ if __name__ == '__main__':
     print('完成！give me five! 运行时间为:',time.time() - time_start)
     print('获取职位数:{}'.format(datasum))
     b.quit()
+#简化爬取的过程，容易出问题
+#可以通过重启猫的方式，换ip。用sele登录tplink操作
+#sele模拟登录，过验证码
+#接口获取的方式
+#https://blog.csdn.net/SvJr6gGCzUJ96OyUo/article/details/80544872
+#def get_json(url,num):
+   # '''''从网页获取JSON,使用POST请求,加上头部信息'''
+   # my_headers = {
+   #         'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36',
+   #          'Host':'www.lagou.com',
+   #         'Referer':'https://www.lagou.com/jobs/list_%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90?labelWords=&fromSearch=true&suginput=',
+   #          'X-Anit-Forge-Code':'0',
+   #         'X-Anit-Forge-Token': 'None',
+   #         'X-Requested-With':'XMLHttpRequest'
+   #         }
+   #
+   # my_data = {
+   #         'first': 'true',
+   #         'pn':num,
+   #         'kd':'数据分析'}
+   #
+   # res = requests.post(url, headers = my_headers, data = my_data)
+   # res.raise_for_status()
+   # res.encoding = 'utf-8'
+   # # 得到包含职位信息的字典
+   # page = res.json()
+   # return page
 
 # 获取cookie
     # # 获取cookie并通过json模块将dict转化成str

@@ -20,21 +20,7 @@ from datetime import datetime, date, timedelta
 
 
 datasum = 0
-print('“产品有前景 发展空间大 年终奖 绩效奖金”'.split(' ' or ','or '”'or '“'or '；'or'、'))
-print('“弹性工作；团队氛围；15薪”'.split(' ' or ','or '”'or '“'or '；'))
-if '20:26发布'.find('发布')  == True:
-    print(date.today().strftime("%Y-%m-%d"))
-else:
-    print('222')
-
-pattern = re.compile('“(.*)”').findall('“产品有前景 发展空间大 年终奖 绩效奖金”')[0].split(' ' or '，'or','or '”'or '“'or '；'or'、')
-print(pattern)
-
-# 试一试是不是一致的
-#
-# 再把if判断翻过了，先判断日期的
-#
-# 'experienceNeed' : need.get_text().split(' / ')[0],
+print('sdsds'.find('以') != -1)
 
 
 
