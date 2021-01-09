@@ -70,7 +70,7 @@ def main(mongo_table):
         except Exception:
             break
 
-#分析及保存数据库
+#分析及保存数据
 def parse_link(mongo_table):
     global datasum  # 在使用前初次声明
 
